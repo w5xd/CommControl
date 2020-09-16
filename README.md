@@ -5,4 +5,4 @@ This program opens a Windows COM port and presents 3 check boxes that control th
 
 <p align='center'><img alt='Screen01.png' src='Screen01.png'/></p>
 
-If all you want is an already-build X86 executable, here is the link: https://github.com/w5xd/CommControl/raw/master/CommControl-1.0.0.0.zip
+If all you want is an already-build X86 executable, here is the link: https://github.com/w5xd/CommControl/raw/master/CommControl-1.0.1.0.zip

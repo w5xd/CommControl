@@ -7,28 +7,24 @@
 #include "Resource.h"
 
 #ifdef UNICODE
-           typedef             std::wstring String_t;
+typedef             std::wstring String_t;
 #else
-           typedef             std::string String_t;
+typedef             std::string String_t;
 #endif
 
-    static const unsigned BUFF_SIZE = 32;
-
-// Global Variables:
-HINSTANCE hInst;                                // current instance
+static const unsigned BUFF_SIZE = 32;
 
 class MainWindow : public ATL::CDialogImpl<MainWindow>
 {
 public:
-    enum {IDD = IDD_MAINDIALOG};
+    enum { IDD = IDD_MAINDIALOG };
 
     MainWindow() : port(INVALID_HANDLE_VALUE)
-    {
-    }
+    {}
 
     ~MainWindow()
     {
-        if (port !=  INVALID_HANDLE_VALUE)
+        if (port != INVALID_HANDLE_VALUE)
             ::CloseHandle(port);
     }
 
@@ -45,38 +41,39 @@ public:
     LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
     {
         HKEY key;
-        if (ERROR_SUCCESS == ::RegOpenKeyEx(HKEY_LOCAL_MACHINE , _T("HARDWARE\\DEVICEMAP\\SERIALCOMM"), 0, KEY_READ, &key))
+        if (ERROR_SUCCESS == ::RegOpenKeyEx(HKEY_LOCAL_MACHINE, _T("HARDWARE\\DEVICEMAP\\SERIALCOMM"), 0, KEY_READ, &key))
         {
-            DWORD dwI = 0;	    
+            DWORD dwI = 0;
             std::vector<TCHAR> szValueName(BUFF_SIZE);
             std::vector<TCHAR> szValue(BUFF_SIZE);
             for (;;)
-		    {
+            {
                 DWORD nBuffSize = szValueName.size();
-			    auto nCode = RegEnumValue(key, dwI, &szValueName[0], &nBuffSize, NULL, NULL, NULL, NULL);
-			    if (nCode != ERROR_NO_MORE_ITEMS)
-			    {
+                auto nCode = RegEnumValue(key, dwI, &szValueName[0], &nBuffSize, NULL, NULL, NULL, NULL);
+                if (nCode != ERROR_NO_MORE_ITEMS)
+                {
                     DWORD valueLen = szValue.size() * sizeof(TCHAR);
                     DWORD tp;
-                    RegQueryValueEx(key, &szValueName[0], 0,  &tp, (unsigned char *)&szValue[0], &valueLen);
+                    RegQueryValueEx(key, &szValueName[0], 0, &tp, (unsigned char *)&szValue[0], &valueLen);
                     if (tp == REG_SZ)
                     {
                         valueLen /= sizeof(TCHAR);
                         String_t comName;
                         comName.assign(szValue.begin(), szValue.begin() + valueLen);
-                        SendDlgItemMessageW(IDC_COMBOPORTS, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(comName.c_str()));
+                        SendDlgItemMessage(IDC_COMBOPORTS, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(comName.c_str()));
                     }
-				    dwI++;
-			    }
+                    dwI++;
+                }
                 else
                     break;
-		    } 
+            }
+            RegCloseKey(key);
         }
         enableDisable(false);
         return 0;
     }
 
-   LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
     {
         EndDialog(IDCANCEL);
         return 0;
@@ -104,23 +101,20 @@ public:
 
 
     LRESULT OnCbnSelchangeComboports(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-
-    HANDLE port;
-
     LRESULT OnBnClickedChecktxd(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnBnClickedCheckrts(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnBnClickedCheckdtr(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+
+    HANDLE port;
 };
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPWSTR    lpCmdLine,
+    _In_ int       nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
-    // Initialize global strings
-    hInst = hInstance;
 
     MainWindow wnd;
     wnd.DoModal();
@@ -140,30 +134,27 @@ LRESULT MainWindow::OnCbnSelchangeComboports(WORD /*wNotifyCode*/, WORD wID, HWN
         GetDlgItemText(wID, &selValue[0], selValue.size());
         String_t comName = _T("\\\\.\\");
 
-        bool alpha=true;
+        bool alpha = true;
         for (unsigned i = 0; i < selValue.size(); i++)
         {
             if (!selValue[i])
                 break;
-#ifdef UNICODE
             if (alpha)
             {
-                if (iswdigit(selValue[i]))
+                if (_istdigit(selValue[i]))
                 {
                     alpha = false;
                     comName += selValue[i];
                 }
-                else if (iswalpha(selValue[i]))
+                else if (_istalpha(selValue[i]))
                     comName += selValue[i];
                 else
                     break;
-            } else if (iswdigit(selValue[i]))
+            }
+            else if (_istdigit(selValue[i]))
                 comName += selValue[i];
             else
                 break;
-#else
-#error "MBCS not implemented"
-#endif
         }
 
         port = ::CreateFile(comName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
@@ -197,7 +188,6 @@ LRESULT MainWindow::OnBnClickedChecktxd(WORD /*wNotifyCode*/, WORD wID, HWND /*h
 LRESULT MainWindow::OnBnClickedCheckrts(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
     ::EscapeCommFunction(port, IsDlgButtonChecked(wID) ? SETRTS : CLRRTS);
-
     return 0;
 }
 
